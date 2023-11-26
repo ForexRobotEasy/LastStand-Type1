@@ -1,0 +1,68 @@
+
+// LastStand Type1 Forex Software
+// Developer: Forex Robot Easy Team
+// Developer's Site: forexroboteasy.com
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <Ichimoku\Ichimoku.mqh>
+#include <HeikenAshi\HeikenAshi.mqh>
+
+// Define input parameters
+input int Lots = 0.01; // Lot size for each trade
+input int CloseMethod = 0; // Closing method (0: TP-SL-TSL)
+
+// Define magic number
+int magic = 1234; // Unique identifier for each trade
+
+// Initialize trade object
+CTrade trade;
+
+// Initialize Ichimoku indicator
+CIchimoku ichimoku;
+double ichimokuBuffer[];
+
+// Initialize Heiken Ashi indicator
+CHeikenAshi heikenAshi;
+double haOpenBuffer[];
+double haCloseBuffer[];
+
+// Initialize OnTick function
+void OnTick()
+{
+    // Check if there is a position already open
+    if (!trade.PositionSelect(_Symbol, magic))
+    {
+        // Calculate Ichimoku indicator values
+        ichimoku.Init(Symbol(), PERIOD_H1);
+        
+        // Calculate Heiken Ashi indicator values
+        heikenAshi.Init(Symbol(), PERIOD_H1);
+        
+        // Get the last calculated values of Ichimoku and Heiken Ashi indicators
+        CopyBuffer(ichimoku.Handle(), 0, 0, 1, ichimokuBuffer);
+        CopyBuffer(heikenAshi.Handle(), 0, 0, 1, haOpenBuffer);
+        CopyBuffer(heikenAshi.Handle(), 1, 0, 1, haCloseBuffer);
+        
+        // Check if conditions are met for opening a trade
+        if (ichimokuBuffer[0] > haOpenBuffer[0] && ichimokuBuffer[0] > haCloseBuffer[0])
+        {
+            // Open a buy trade
+            trade.Buy(Lots, _Symbol, magic);
+        }
+        else if (ichimokuBuffer[0] < haOpenBuffer[0] && ichimokuBuffer[0] < haCloseBuffer[0])
+        {
+            // Open a sell trade
+            trade.Sell(Lots, _Symbol, magic);
+        }
+    }
+    else
+    {
+        // Check if conditions are met for closing the trade
+        if (CloseMethod == 0)
+        {
+            // Close the trade using TP-SL-TSL method
+            trade.PositionClose(_Symbol, magic);
+        }
+    }
+}
